@@ -31,5 +31,10 @@ describe('Query utils', () => {
         list: '1,2,3'
       })).toBe('?list=1,2,3')
     })
+
+    it('should keep query order', () => {
+      const query = resolveQuery('foo=bar&baz=qux&foo=k')
+      expect(stringifyQuery(query)).toBe('?foo=bar&baz=qux&foo=k')
+    })
   })
 })
