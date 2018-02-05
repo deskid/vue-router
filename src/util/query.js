@@ -30,6 +30,7 @@ export function resolveQuery (
   }
   for (const key in extraQuery) {
     parsedQuery[key] = extraQuery[key]
+    parsedQuery._rawQuery.push([key, extraQuery[key]])
   }
   return parsedQuery
 }
@@ -37,18 +38,29 @@ export function resolveQuery (
 function parseQuery (query: string): Dictionary<string> {
   const res = {}
 
+  Object.defineProperty(res, '_rawQuery', {
+    value: [],
+    enumerable: false
+  })
+
   query = query.trim().replace(/^(\?|#|&)/, '')
 
   if (!query) {
     return res
   }
 
-  query.split('&').forEach(param => {
+  query.split('&').forEach((param, index) => {
     const parts = param.replace(/\+/g, ' ').split('=')
     const key = decode(parts.shift())
     const val = parts.length > 0
       ? decode(parts.join('='))
       : null
+
+    if (res._rawQuery[index] === undefined) {
+      res._rawQuery[index] = []
+      res._rawQuery[index][0] = key
+      res._rawQuery[index][1] = val
+    }
 
     if (res[key] === undefined) {
       res[key] = val
@@ -63,8 +75,11 @@ function parseQuery (query: string): Dictionary<string> {
 }
 
 export function stringifyQuery (obj: Dictionary<string>): string {
-  const res = obj ? Object.keys(obj).map(key => {
-    const val = obj[key]
+  const hasRawQuery = !!obj._rawQuery
+  const queryObj = hasRawQuery ? obj._rawQuery : obj
+  const res = queryObj ? Object.keys(queryObj).map(index => {
+    const key = hasRawQuery ? queryObj[index][0] : index
+    const val = hasRawQuery ? queryObj[index][1] : obj[index]
 
     if (val === undefined) {
       return ''
